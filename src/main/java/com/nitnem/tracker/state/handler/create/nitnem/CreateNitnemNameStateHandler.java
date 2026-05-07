@@ -6,6 +6,7 @@ import com.nitnem.tracker.model.UserState;
 import com.nitnem.tracker.service.TelegramSenderService;
 import com.nitnem.tracker.service.UserSessionService;
 import com.nitnem.tracker.state.handler.StateHandler;
+import com.nitnem.tracker.utils.TelegramKeyboardFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -19,6 +20,7 @@ public class CreateNitnemNameStateHandler
     private final TelegramSenderService senderService;
 
     private final UserSessionService sessionService;
+    private final TelegramKeyboardFactory keyboardFactory;
 
     @Override
     public UserState getSupportedState() {
@@ -41,12 +43,14 @@ public class CreateNitnemNameStateHandler
         senderService.send(
                 chatId,
                 "Received Nitnem name : "
-                        + message
+                        + message,
+                keyboardFactory.getKeyboard(chatId, message)
         );
 
         senderService.send(
                 chatId,
-                "Enter the daily threshold count"
+                "Enter the daily threshold count",
+                keyboardFactory.getKeyboard(chatId, message)
         );
 
         session.setState(UserState.WAITING_FOR_CREATE_THRESHOLD_COUNT);

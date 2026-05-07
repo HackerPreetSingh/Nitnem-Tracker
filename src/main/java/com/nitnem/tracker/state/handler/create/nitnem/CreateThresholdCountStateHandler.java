@@ -6,6 +6,7 @@ import com.nitnem.tracker.model.UserState;
 import com.nitnem.tracker.service.TelegramSenderService;
 import com.nitnem.tracker.service.UserSessionService;
 import com.nitnem.tracker.state.handler.StateHandler;
+import com.nitnem.tracker.utils.TelegramKeyboardFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -19,6 +20,8 @@ public class CreateThresholdCountStateHandler
     private final TelegramSenderService senderService;
 
     private final UserSessionService sessionService;
+
+    private final TelegramKeyboardFactory keyboardFactory;
 
     @Override
     public UserState getSupportedState() {
@@ -47,7 +50,8 @@ public class CreateThresholdCountStateHandler
 
                 senderService.send(
                         chatId,
-                        "Threshold must be greater than 0"
+                        "Threshold must be greater than 0",
+                        keyboardFactory.getKeyboard(chatId, message)
                 );
 
                 return;
@@ -57,7 +61,8 @@ public class CreateThresholdCountStateHandler
 
             senderService.send(
                     chatId,
-                    "Please enter a valid number"
+                    "Please enter a valid number",
+                    keyboardFactory.getKeyboard(chatId, message)
             );
 
             return;
@@ -66,12 +71,14 @@ public class CreateThresholdCountStateHandler
         senderService.send(
                 chatId,
                 "Received Nitnem Threshold Count : "
-                        + thresholdCount
+                        + thresholdCount,
+                keyboardFactory.getKeyboard(chatId, message)
         );
 
         senderService.send(
                 chatId,
-                "Enter the total duration of nitnem"
+                "Enter the total duration of nitnem",
+                keyboardFactory.getKeyboard(chatId, message)
         );
 
         session.setState(UserState.WAITING_FOR_CREATE_DURATION_DAYS);

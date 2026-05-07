@@ -1,13 +1,21 @@
 package com.nitnem.tracker.state.handler.update.nitnem;
 
+import com.nitnem.tracker.entity.NitnemEntry;
 import com.nitnem.tracker.model.UserSession;
 import com.nitnem.tracker.model.UserState;
+import com.nitnem.tracker.repository.NitnemEntryRepository;
+import com.nitnem.tracker.service.NitnemEntryService;
+import com.nitnem.tracker.service.NitnemService;
 import com.nitnem.tracker.service.TelegramSenderService;
 import com.nitnem.tracker.service.UserSessionService;
 import com.nitnem.tracker.state.handler.StateHandler;
+import com.nitnem.tracker.utils.TelegramKeyboardFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+
+import java.time.LocalDate;
+import java.util.List;
 
 @Slf4j
 @Component
@@ -18,6 +26,10 @@ public class UpdateCountStateHandler
     private final TelegramSenderService senderService;
 
     private final UserSessionService sessionService;
+
+    private final TelegramKeyboardFactory keyboardFactory;
+
+    private final NitnemEntryService nitnemEntryService;
 
     @Override
     public UserState getSupportedState() {
@@ -37,10 +49,13 @@ public class UpdateCountStateHandler
                 message
         );
 
+        nitnemEntryService.saveNitnemEntry(session, message);
+
         senderService.send(
                 chatId,
                 "Count Update Successfully. Total today count : "
-                        + message
+                        + nitnemEntryService.fetchTodayCount(session, chatId),
+                keyboardFactory.getMainMenuKeyboard()
         );
 
         sessionService.clear(

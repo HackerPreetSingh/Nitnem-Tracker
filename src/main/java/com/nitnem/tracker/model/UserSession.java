@@ -17,6 +17,8 @@ public class UserSession {
 
     private Integer durationDays;
 
+    private Integer completedCount;
+
     public boolean isNew() {
         return this.state == UserState.IDLE;
     }

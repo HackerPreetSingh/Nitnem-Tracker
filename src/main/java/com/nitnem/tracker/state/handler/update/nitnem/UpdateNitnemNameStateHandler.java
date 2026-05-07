@@ -6,6 +6,7 @@ import com.nitnem.tracker.model.UserState;
 import com.nitnem.tracker.service.TelegramSenderService;
 import com.nitnem.tracker.service.UserSessionService;
 import com.nitnem.tracker.state.handler.StateHandler;
+import com.nitnem.tracker.utils.TelegramKeyboardFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -19,6 +20,8 @@ public class UpdateNitnemNameStateHandler
     private final TelegramSenderService senderService;
 
     private final UserSessionService sessionService;
+
+    private final TelegramKeyboardFactory keyboardFactory;
 
     @Override
     public UserState getSupportedState() {
@@ -35,12 +38,16 @@ public class UpdateNitnemNameStateHandler
 
         senderService.send(
                 chatId,
-                "Enter count"
+                "Enter count",
+                keyboardFactory.getExitMenuKeyboard()
         );
 
-        sessionService.setState(
+        session.setNitnemName(message);
+        session.setState(UserState.WAITING_FOR_UPDATE_NITNEM_COUNT);
+
+        sessionService.setSession(
                 chatId,
-                UserState.WAITING_FOR_UPDATE_NITNEM_COUNT
+                session
         );
     }
 }

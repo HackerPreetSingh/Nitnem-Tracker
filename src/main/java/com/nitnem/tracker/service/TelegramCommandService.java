@@ -1,15 +1,16 @@
 package com.nitnem.tracker.service;
 
-import com.nitnem.tracker.entity.Nitnem;
-import com.nitnem.tracker.entity.User;
+import com.nitnem.tracker.utils.AppConstants;
 import com.nitnem.tracker.model.UserSession;
 import com.nitnem.tracker.model.UserState;
-import com.nitnem.tracker.repository.NitnemRepository;
 import com.nitnem.tracker.state.handler.StateHandler;
+import com.nitnem.tracker.utils.TelegramKeyboardFactory;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.checkerframework.checker.units.qual.A;
 import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
 
 import java.util.List;
 import java.util.Map;
@@ -25,7 +26,8 @@ public class TelegramCommandService {
     private final UserSessionService sessionService;
     private final List<StateHandler> stateHandlerList;
     private Map<UserState, StateHandler> stateHandlerMap;
-    private final NitnemRepository nitnemRepository;
+    private final NitnemService nitnemService;
+    private final TelegramKeyboardFactory keyboardFactory;
 
     @PostConstruct
     public void setup() {
@@ -35,46 +37,28 @@ public class TelegramCommandService {
     public void processMessage(Long chatId, String message)
             throws Exception {
 
+        if (message.equals("/exit")) {
+            sessionService.clear(chatId);
+            telegramSenderService.send(chatId, AppConstants.MAIN_MENU, keyboardFactory.getKeyboard(chatId, message));
+            return;
+        }
+
         if (handleCurrentSession(chatId, message)) return;
 
         String text = handleCommand(chatId, message);
 
-        telegramSenderService.send(chatId, text);
+        telegramSenderService.send(chatId, text, keyboardFactory.getKeyboard(chatId, message));
     }
 
     private @NonNull String handleCommand(Long chatId, String message) {
         return switch (message) {
-
-            case "/start" -> """
-                    Welcome to Nitnem Tracker 🙏
-                    
-                    Commands:
-                    /create
-                    /list
-                    /update
-                    /delete
-                    """;
 
             case "/create" -> {
                 sessionService.setState(chatId, UserState.WAITING_FOR_CREATE_NITNEM_NAME);
                 yield "Enter nitnem name"; // 'yield' returns the value from the block
             }
 
-            case "/list" -> nitnemRepository.findByUserTelegramChatId(chatId).
-                    stream()
-                    .map(nitnem ->
-                            """
-                            Name: %s
-                            Target: %d
-                            Duration: %d days
-                            """
-                                    .formatted(
-                                            nitnem.getName(),
-                                            nitnem.getTargetCount(),
-                                            nitnem.getDurationDays()
-                                    )
-                    )
-                    .collect(Collectors.joining("\n"));
+            case "/list" -> nitnemService.getNitnemDetails(chatId);
 
             case "/update" -> {
                 sessionService.setState(chatId, UserState.WAITING_FOR_UPDATE_NITNEM_NAME);
@@ -83,10 +67,15 @@ public class TelegramCommandService {
 
             case "/delete" -> {
                 sessionService.setState(chatId, UserState.WAITING_FOR_DELETE_NITNEM_NAME);
-                yield "Enter Nitnem Name to delete";
+                String nitnemNames = nitnemService.getNitnemNames(chatId);
+                if (nitnemNames.isBlank()) {
+                    yield "No nitnem exists.";
+                } else {
+                    yield nitnemNames + "\nEnter Nitnem Name to delete";
+                }
             }
 
-            default -> "Unknown command";
+            default -> AppConstants.MAIN_MENU;
         };
     }
 

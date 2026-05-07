@@ -5,10 +5,12 @@ import com.nitnem.tracker.entity.User;
 import com.nitnem.tracker.model.UserSession;
 import com.nitnem.tracker.model.UserState;
 import com.nitnem.tracker.repository.NitnemRepository;
+import com.nitnem.tracker.service.NitnemService;
 import com.nitnem.tracker.service.TelegramSenderService;
 import com.nitnem.tracker.service.UserService;
 import com.nitnem.tracker.service.UserSessionService;
 import com.nitnem.tracker.state.handler.StateHandler;
+import com.nitnem.tracker.utils.TelegramKeyboardFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -25,9 +27,9 @@ public class CreateDaysDurationStateHandler
 
     private final UserSessionService sessionService;
 
-    private final NitnemRepository nitnemRepository;
+    private final NitnemService nitnemService;
 
-    private final UserService userService;
+    private final TelegramKeyboardFactory keyboardFactory;
 
     @Override
     public UserState getSupportedState() {
@@ -56,7 +58,8 @@ public class CreateDaysDurationStateHandler
 
                 senderService.send(
                         chatId,
-                        "Days Duration must be greater than 0"
+                        "Days Duration must be greater than 0",
+                        keyboardFactory.getKeyboard(chatId, message)
                 );
 
                 return;
@@ -66,7 +69,8 @@ public class CreateDaysDurationStateHandler
 
             senderService.send(
                     chatId,
-                    "Please enter a valid Days Duration"
+                    "Please enter a valid Days Duration",
+                    keyboardFactory.getKeyboard(chatId, message)
             );
 
             return;
@@ -74,26 +78,17 @@ public class CreateDaysDurationStateHandler
 
         senderService.send(
                 chatId,
-                "Creating your nitnem..."
+                "Creating your nitnem...",
+                keyboardFactory.getKeyboard(chatId, message)
         );
 
-
-        User user  = userService.findOrCreateNewUser(chatId);
-
-        Nitnem nitnem = Nitnem.builder()
-                .name(session.getNitnemName())
-                .targetCount(session.getTargetCount())
-                .durationDays(durationDays)
-                .startDate(LocalDate.now())
-                .active(true)
-                .user(user)
-                .build();
-
-        nitnemRepository.save(nitnem);
+        session.setDurationDays(durationDays);
+        nitnemService.saveNitnem(session, chatId);
 
         senderService.send(
                 chatId,
-                "Nitnem Created Successfully"
+                "Nitnem Created Successfully",
+                keyboardFactory.getMainMenuKeyboard()
         );
 
         sessionService.clear(
