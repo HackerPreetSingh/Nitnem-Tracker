@@ -2,9 +2,11 @@ package com.nitnem.tracker.state.handler.delete.nitnem;
 
 import com.nitnem.tracker.model.UserSession;
 import com.nitnem.tracker.model.UserState;
+import com.nitnem.tracker.model.ValidationResult;
 import com.nitnem.tracker.service.NitnemService;
 import com.nitnem.tracker.service.TelegramSenderService;
 import com.nitnem.tracker.service.UserSessionService;
+import com.nitnem.tracker.service.ValidationService;
 import com.nitnem.tracker.state.handler.StateHandler;
 import com.nitnem.tracker.utils.TelegramKeyboardFactory;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,7 @@ public class DeleteNitnemNameStateHandler
     private final UserSessionService sessionService;
     private final NitnemService nitnemService;
     private final TelegramKeyboardFactory keyboardFactory;
+    private final ValidationService validationService;
 
     @Override
     public UserState getSupportedState() {
@@ -36,17 +39,32 @@ public class DeleteNitnemNameStateHandler
             String message
     ) throws Exception {
 
-        if (nitnemService.deleteNitnem(chatId, message)!=1) {
+        ValidationResult<String> result =
+                validationService.validateNitnemName(message);
+
+        if (!result.isValid()) {
+
+            senderService.send(
+                    chatId,
+                    result.getErrorMessage()
+            );
+
+            return;
+        }
+
+        String nitnemName = result.getValue();
+
+        if (nitnemService.deleteNitnem(chatId, nitnemName)!=1) {
             senderService.send(
                     chatId,
                     "No Such Nitnem Exists!",
-                    keyboardFactory.getKeyboard(chatId, message)
+                    keyboardFactory.getKeyboard(chatId, nitnemName)
             );
         } else {
             senderService.send(
                     chatId,
                     "Nitnem deleted successfully.",
-                    keyboardFactory.getKeyboard(chatId, message)
+                    keyboardFactory.getMainMenuKeyboard()
             );
         }
 

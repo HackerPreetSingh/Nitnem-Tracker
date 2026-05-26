@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface NitnemRepository extends JpaRepository<Nitnem, Long> {
@@ -21,7 +22,7 @@ public interface NitnemRepository extends JpaRepository<Nitnem, Long> {
 
     );
 
-    Nitnem findByName(String nitnemName);
+    Optional<Nitnem> findByName(String nitnemName);
 
-    Nitnem findByUserTelegramChatIdAndName(Long TelegramChatId, String name);
+    Optional<Nitnem> findByUserTelegramChatIdAndName(Long TelegramChatId, String name);
 }

@@ -1,21 +1,15 @@
 package com.nitnem.tracker.state.handler.update.nitnem;
 
-import com.nitnem.tracker.entity.NitnemEntry;
+import com.nitnem.tracker.entity.Nitnem;
 import com.nitnem.tracker.model.UserSession;
 import com.nitnem.tracker.model.UserState;
-import com.nitnem.tracker.repository.NitnemEntryRepository;
-import com.nitnem.tracker.service.NitnemEntryService;
-import com.nitnem.tracker.service.NitnemService;
-import com.nitnem.tracker.service.TelegramSenderService;
-import com.nitnem.tracker.service.UserSessionService;
+import com.nitnem.tracker.model.ValidationResult;
+import com.nitnem.tracker.service.*;
 import com.nitnem.tracker.state.handler.StateHandler;
 import com.nitnem.tracker.utils.TelegramKeyboardFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.time.LocalDate;
-import java.util.List;
 
 @Slf4j
 @Component
@@ -31,6 +25,10 @@ public class UpdateCountStateHandler
 
     private final NitnemEntryService nitnemEntryService;
 
+    private final NitnemService nitnemService;
+
+    private final ValidationService validationService;
+
     @Override
     public UserState getSupportedState() {
 
@@ -44,17 +42,67 @@ public class UpdateCountStateHandler
             String message
     ) throws Exception {
 
+        ValidationResult<Integer> result =
+                validationService.validatePositiveInteger(
+                        message,
+                        "Today Count",
+                        1,
+                        3650
+                );
+
+        if (!result.isValid()) {
+
+            senderService.send(
+                    chatId,
+                    result.getErrorMessage(),
+                    keyboardFactory.getKeyboard(chatId, message)
+            );
+
+            return;
+        }
+
+        int currentCount = result.getValue();
+
+        Nitnem nitnem = nitnemService
+                .findByUserTelegramChatIdAndName(
+                        chatId,
+                        session.getNitnemName()
+                );
+
+        int thresholdCount = nitnem.getTargetCount();
+
+        ValidationResult<Integer> result2 =
+                validationService.validateCurrentCount(
+                        currentCount,
+                        thresholdCount
+                );
+
+        if (!result2.isValid()) {
+
+            senderService.send(
+                    chatId,
+                    result.getErrorMessage(),
+                    keyboardFactory.getKeyboard(chatId, message)
+            );
+
+            return;
+        }
+
+        currentCount = result.getValue();
+
+
+
+        nitnemEntryService.saveNitnemEntry(nitnem, currentCount);
+
         log.info(
                 "Nitnem Count Updated Successfully to : {}",
-                message
+                currentCount
         );
-
-        nitnemEntryService.saveNitnemEntry(session, message);
 
         senderService.send(
                 chatId,
                 "Count Update Successfully. Total today count : "
-                        + nitnemEntryService.fetchTodayCount(session, chatId),
+                        + nitnemEntryService.fetchTodayCount(session.getNitnemName(), chatId),
                 keyboardFactory.getMainMenuKeyboard()
         );
 

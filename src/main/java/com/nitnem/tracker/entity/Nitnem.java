@@ -43,6 +43,11 @@ public class Nitnem {
     )
     private Boolean active;
 
+    @Column(
+            nullable = false
+    )
+    private Integer unitConversionFactor;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "user_id",

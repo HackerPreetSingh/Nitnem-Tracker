@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -17,22 +17,33 @@ public class NitnemEntryService {
 
     private final NitnemEntryRepository nitnemEntryRepository;
 
-    private final NitnemService nitnemService;
+    private final NitnemRepository nitnemRepository;
 
-    public void saveNitnemEntry(UserSession session, String message) {
+    public void saveNitnemEntry(Nitnem nitnem, Integer todayCount) {
         NitnemEntry nitnemEntry = NitnemEntry.builder()
                 .date(LocalDate.now())
-                .completedCount(Integer.valueOf(message))
-                .nitnem(nitnemService.getNitnem(session.getNitnemName()))
+                .completedCount(todayCount)
+                .nitnem(nitnem)
                 .doneAt(LocalDate.now())
                 .build();
 
         nitnemEntryRepository.save(nitnemEntry);
     }
 
+    public Integer fetchTodayCount(String nitnemName, Long chatId) {
+        Optional<Nitnem> nitnemOpt = nitnemRepository.findByUserTelegramChatIdAndName(chatId, nitnemName);
 
-    public Integer fetchTodayCount(UserSession session, Long chatId) {
-        Nitnem nitnem = nitnemService.findByUserTelegramChatIdAndName(chatId, session.getNitnemName());
-        return nitnemEntryRepository.getTodayCompletedCount(nitnem.getId(), LocalDate.now());
+        return nitnemOpt.isPresent()
+                ? nitnemEntryRepository.getTodayCompletedCount(nitnemOpt.get().getId(), LocalDate.now())
+                :-1;
+    }
+
+    public Integer fetchTillTodayCount(String nitnemName, Long chatId) {
+        Optional<Nitnem> nitnemOpt = nitnemRepository.findByUserTelegramChatIdAndName(chatId, nitnemName);
+        return nitnemOpt.isPresent()?nitnemEntryRepository.getTillTodayCompletedCount(nitnemOpt.get().getId()):-1;
+    }
+
+    public Integer deleteNitnemEntries(Nitnem nitnem) {
+        return nitnemEntryRepository.deleteByNitnem(nitnem);
     }
 }

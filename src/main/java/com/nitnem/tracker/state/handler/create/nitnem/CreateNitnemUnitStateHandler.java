@@ -1,6 +1,6 @@
 package com.nitnem.tracker.state.handler.create.nitnem;
 
-import com.nitnem.tracker.entity.User;
+import com.nitnem.tracker.model.NitnemUnit;
 import com.nitnem.tracker.model.UserSession;
 import com.nitnem.tracker.model.UserState;
 import com.nitnem.tracker.service.TelegramSenderService;
@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class CreateThresholdCountStateHandler
+public class CreateNitnemUnitStateHandler
         implements StateHandler {
 
     private final TelegramSenderService senderService;
@@ -26,7 +26,7 @@ public class CreateThresholdCountStateHandler
     @Override
     public UserState getSupportedState() {
 
-        return UserState.WAITING_FOR_CREATE_THRESHOLD_COUNT;
+        return UserState.WAITING_FOR_CREATE_NITNEM_UNIT;
     }
 
     @Override
@@ -37,52 +37,32 @@ public class CreateThresholdCountStateHandler
     ) throws Exception {
 
         log.info(
-                "Received Nitnem Threshold Count : {}",
+                "Received Nitnem Unit : {}",
                 message
         );
 
-        int thresholdCount;
+        String nitnemUnit = message.toLowerCase();
 
-        try {
-            thresholdCount = Integer.parseInt(message);
-
-            if (thresholdCount <= 0) {
-
-                senderService.send(
-                        chatId,
-                        "Threshold must be greater than 0",
-                        keyboardFactory.getKeyboard(chatId, message)
-                );
-
-                return;
-            }
-
-        } catch (NumberFormatException e) {
-
-            senderService.send(
-                    chatId,
-                    "Please enter a valid number",
-                    keyboardFactory.getKeyboard(chatId, message)
-            );
-
-            return;
+        if (nitnemUnit.equals("maala") ) {
+            session.setNitnemUnit(NitnemUnit.MAALA);
+        } else {
+            session.setNitnemUnit(NitnemUnit.RAW);
         }
 
         senderService.send(
                 chatId,
-                "Received Nitnem Threshold Count : "
-                        + thresholdCount,
-                keyboardFactory.getKeyboard(chatId, message)
+                "Received Nitnem Unit : "
+                        + nitnemUnit,
+                keyboardFactory.getKeyboard(chatId, nitnemUnit)
         );
 
         senderService.send(
                 chatId,
-                "Enter the total duration of nitnem",
+                "Enter the Total Count",
                 keyboardFactory.getKeyboard(chatId, message)
         );
 
-        session.setState(UserState.WAITING_FOR_CREATE_DURATION_DAYS);
-        session.setTargetCount(thresholdCount);
+        session.setState(UserState.WAITING_FOR_CREATE_TOTAL_COUNT);
 
         sessionService.setSession(
                 chatId,

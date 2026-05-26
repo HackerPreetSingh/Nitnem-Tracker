@@ -2,14 +2,29 @@ spring:
   application:
     name: Nitnem Tracker
 
+#  datasource:
+#    url: ${DB_URL}
+#    username: ${DB_USERNAME}
+#    password: ${DB_PASSWORD}
+#
+#  jpa:
+#    hibernate:
+#      ddl-auto: update
+#
+#    show-sql: true
+
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
+    url: jdbc:postgresql://aws-1-ap-northeast-1.pooler.supabase.com:5432/postgres
+    username: postgres.cxlbqkbcfpssdtpshqmm
     password: ${DB_PASSWORD}
 
   jpa:
     hibernate:
       ddl-auto: update
+
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
 
     show-sql: true
 

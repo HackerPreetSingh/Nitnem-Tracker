@@ -3,8 +3,10 @@ package com.nitnem.tracker.state.handler.create.nitnem;
 import com.nitnem.tracker.entity.User;
 import com.nitnem.tracker.model.UserSession;
 import com.nitnem.tracker.model.UserState;
+import com.nitnem.tracker.model.ValidationResult;
 import com.nitnem.tracker.service.TelegramSenderService;
 import com.nitnem.tracker.service.UserSessionService;
+import com.nitnem.tracker.service.ValidationService;
 import com.nitnem.tracker.state.handler.StateHandler;
 import com.nitnem.tracker.utils.TelegramKeyboardFactory;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ public class CreateNitnemNameStateHandler
 
     private final UserSessionService sessionService;
     private final TelegramKeyboardFactory keyboardFactory;
+    private final ValidationService validationService;
 
     @Override
     public UserState getSupportedState() {
@@ -40,21 +43,36 @@ public class CreateNitnemNameStateHandler
                 message
         );
 
+        ValidationResult<String> result =
+                validationService.validateNitnemName(message);
+
+        if (!result.isValid()) {
+
+            senderService.send(
+                    chatId,
+                    result.getErrorMessage()
+            );
+
+            return;
+        }
+
+        String nitnemName = result.getValue();
+
         senderService.send(
                 chatId,
                 "Received Nitnem name : "
-                        + message,
-                keyboardFactory.getKeyboard(chatId, message)
+                        + nitnemName,
+                keyboardFactory.getKeyboard(chatId, nitnemName)
         );
 
         senderService.send(
                 chatId,
-                "Enter the daily threshold count",
-                keyboardFactory.getKeyboard(chatId, message)
+                "Enter the nitnem type: Maala/Raw",
+                keyboardFactory.getKeyboard(chatId, nitnemName)
         );
 
-        session.setState(UserState.WAITING_FOR_CREATE_THRESHOLD_COUNT);
-        session.setNitnemName(message);
+        session.setState(UserState.WAITING_FOR_CREATE_NITNEM_UNIT);
+        session.setNitnemName(nitnemName);
 
         sessionService.setSession(
                 chatId,

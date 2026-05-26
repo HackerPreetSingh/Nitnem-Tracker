@@ -1,10 +1,9 @@
-package com.nitnem.tracker.state.handler.update.nitnem;
+package com.nitnem.tracker.state.handler.create.nitnem;
 
-import com.nitnem.tracker.entity.User;
+import com.nitnem.tracker.model.NitnemUnit;
 import com.nitnem.tracker.model.UserSession;
 import com.nitnem.tracker.model.UserState;
 import com.nitnem.tracker.model.ValidationResult;
-import com.nitnem.tracker.service.NitnemService;
 import com.nitnem.tracker.service.TelegramSenderService;
 import com.nitnem.tracker.service.UserSessionService;
 import com.nitnem.tracker.service.ValidationService;
@@ -17,7 +16,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class UpdateNitnemNameStateHandler
+public class CreateTotalCountStateHandler
         implements StateHandler {
 
     private final TelegramSenderService senderService;
@@ -28,12 +27,10 @@ public class UpdateNitnemNameStateHandler
 
     private final ValidationService validationService;
 
-    private final NitnemService nitnemService;
-
     @Override
     public UserState getSupportedState() {
 
-        return UserState.WAITING_FOR_UPDATE_NITNEM_NAME;
+        return UserState.WAITING_FOR_CREATE_TOTAL_COUNT;
     }
 
     @Override
@@ -43,46 +40,49 @@ public class UpdateNitnemNameStateHandler
             String message
     ) throws Exception {
 
-        ValidationResult<String> result =
-                validationService.validateNitnemName(message);
+        log.info(
+                "Received Nitnem Total Count : {}",
+                message
+        );
+
+        ValidationResult<Integer> result =
+                validationService.validatePositiveInteger(
+                        message,
+                        "Total Count",
+                        1,
+                        999999
+                );
 
         if (!result.isValid()) {
 
             senderService.send(
                     chatId,
-                    result.getErrorMessage()
+                    result.getErrorMessage(),
+                    keyboardFactory.getKeyboard(chatId, message)
             );
 
             return;
         }
 
-        String nitnemName = result.getValue();
-
-        if (!nitnemService.nitnemExists(
-                chatId,
-                nitnemName
-        )) {
-
-            senderService.send(
-                    chatId,
-                    "Nitnem not found",
-                    keyboardFactory.getKeyboard(
-                            chatId,
-                            "/update"
-                    )
-            );
-
-            return;
-        }
+        int totalCount = result.getValue();
 
         senderService.send(
                 chatId,
-                "Enter Nitnem Unit: Maala/Raw",
-                keyboardFactory.getExitMenuKeyboard()
+                "Received Nitnem Total Count : "
+                        + totalCount,
+                keyboardFactory.getKeyboard(chatId, message)
         );
 
-        session.setNitnemName(nitnemName);
-        session.setState(UserState.WAITING_FOR_UPDATE_NITNEM_COUNT);
+        senderService.send(
+                chatId,
+                "Enter the total duration of nitnem",
+                keyboardFactory.getKeyboard(chatId, message)
+        );
+
+        int convertedCount = session.getNitnemUnit() == NitnemUnit.MAALA?totalCount*110:totalCount;
+
+        session.setState(UserState.WAITING_FOR_CREATE_DURATION_DAYS);
+        session.setTargetCount(convertedCount);
 
         sessionService.setSession(
                 chatId,

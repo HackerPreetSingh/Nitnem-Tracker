@@ -11,6 +11,8 @@ public class UserSession {
 
     private UserState state;
 
+    private NitnemUnit nitnemUnit;
+
     private String nitnemName;
 
     private Integer targetCount;

@@ -4,11 +4,9 @@ import com.nitnem.tracker.entity.Nitnem;
 import com.nitnem.tracker.entity.User;
 import com.nitnem.tracker.model.UserSession;
 import com.nitnem.tracker.model.UserState;
+import com.nitnem.tracker.model.ValidationResult;
 import com.nitnem.tracker.repository.NitnemRepository;
-import com.nitnem.tracker.service.NitnemService;
-import com.nitnem.tracker.service.TelegramSenderService;
-import com.nitnem.tracker.service.UserService;
-import com.nitnem.tracker.service.UserSessionService;
+import com.nitnem.tracker.service.*;
 import com.nitnem.tracker.state.handler.StateHandler;
 import com.nitnem.tracker.utils.TelegramKeyboardFactory;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +28,7 @@ public class CreateDaysDurationStateHandler
     private final NitnemService nitnemService;
 
     private final TelegramKeyboardFactory keyboardFactory;
+    private final ValidationService validationService;
 
     @Override
     public UserState getSupportedState() {
@@ -49,32 +48,26 @@ public class CreateDaysDurationStateHandler
                 message
         );
 
-        int durationDays;
-
-        try {
-            durationDays = Integer.parseInt(message);
-
-            if (durationDays <= 0) {
-
-                senderService.send(
-                        chatId,
-                        "Days Duration must be greater than 0",
-                        keyboardFactory.getKeyboard(chatId, message)
+        ValidationResult<Integer> result =
+                validationService.validatePositiveInteger(
+                        message,
+                        "Duration Days",
+                        1,
+                        3650
                 );
 
-                return;
-            }
-
-        } catch (NumberFormatException e) {
+        if (!result.isValid()) {
 
             senderService.send(
                     chatId,
-                    "Please enter a valid Days Duration",
+                    result.getErrorMessage(),
                     keyboardFactory.getKeyboard(chatId, message)
             );
 
             return;
         }
+
+        int durationDays = result.getValue();
 
         senderService.send(
                 chatId,

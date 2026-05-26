@@ -1,13 +1,11 @@
 package com.nitnem.tracker.state.handler.update.nitnem;
 
-import com.nitnem.tracker.entity.User;
+import com.nitnem.tracker.entity.Nitnem;
+import com.nitnem.tracker.model.NitnemUnit;
 import com.nitnem.tracker.model.UserSession;
 import com.nitnem.tracker.model.UserState;
 import com.nitnem.tracker.model.ValidationResult;
-import com.nitnem.tracker.service.NitnemService;
-import com.nitnem.tracker.service.TelegramSenderService;
-import com.nitnem.tracker.service.UserSessionService;
-import com.nitnem.tracker.service.ValidationService;
+import com.nitnem.tracker.service.*;
 import com.nitnem.tracker.state.handler.StateHandler;
 import com.nitnem.tracker.utils.TelegramKeyboardFactory;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +15,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class UpdateNitnemNameStateHandler
+public class UpdateNitnemUnitStateHandler
         implements StateHandler {
 
     private final TelegramSenderService senderService;
@@ -26,14 +24,16 @@ public class UpdateNitnemNameStateHandler
 
     private final TelegramKeyboardFactory keyboardFactory;
 
-    private final ValidationService validationService;
+    private final NitnemEntryService nitnemEntryService;
 
     private final NitnemService nitnemService;
+
+    private final ValidationService validationService;
 
     @Override
     public UserState getSupportedState() {
 
-        return UserState.WAITING_FOR_UPDATE_NITNEM_NAME;
+        return UserState.WAITING_FOR_UPDATE_NITNEM_UNIT;
     }
 
     @Override
@@ -43,45 +43,33 @@ public class UpdateNitnemNameStateHandler
             String message
     ) throws Exception {
 
-        ValidationResult<String> result =
-                validationService.validateNitnemName(message);
 
-        if (!result.isValid()) {
+        log.info(
+                "Received Nitnem Unit : {}",
+                message
+        );
 
-            senderService.send(
-                    chatId,
-                    result.getErrorMessage()
-            );
+        String nitnemUnit = message.toLowerCase();
 
-            return;
-        }
-
-        String nitnemName = result.getValue();
-
-        if (!nitnemService.nitnemExists(
-                chatId,
-                nitnemName
-        )) {
-
-            senderService.send(
-                    chatId,
-                    "Nitnem not found",
-                    keyboardFactory.getKeyboard(
-                            chatId,
-                            "/update"
-                    )
-            );
-
-            return;
+        if (nitnemUnit.equals("maala") ) {
+            session.setNitnemUnit(NitnemUnit.MAALA);
+        } else {
+            session.setNitnemUnit(NitnemUnit.RAW);
         }
 
         senderService.send(
                 chatId,
-                "Enter Nitnem Unit: Maala/Raw",
+                "Received Nitnem Unit : "
+                        + nitnemUnit,
+                keyboardFactory.getKeyboard(chatId, nitnemUnit)
+        );
+
+        senderService.send(
+                chatId,
+                "Enter count",
                 keyboardFactory.getExitMenuKeyboard()
         );
 
-        session.setNitnemName(nitnemName);
         session.setState(UserState.WAITING_FOR_UPDATE_NITNEM_COUNT);
 
         sessionService.setSession(
