@@ -1,0 +1,13 @@
+name: Health Check
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check Health Nitnem Tracker
+        run: curl https://nitnem-tracker.onrender.com/
