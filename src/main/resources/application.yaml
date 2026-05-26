@@ -14,8 +14,8 @@ spring:
 #    show-sql: true
 
   datasource:
-    url: jdbc:postgresql://aws-1-ap-northeast-1.pooler.supabase.com:5432/postgres
-    username: postgres.cxlbqkbcfpssdtpshqmm
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
   jpa:
