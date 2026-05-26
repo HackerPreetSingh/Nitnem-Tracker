@@ -7,6 +7,7 @@ import com.nitnem.tracker.model.NitnemUnit;
 import com.nitnem.tracker.model.UserSession;
 import com.nitnem.tracker.repository.NitnemRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +15,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class NitnemService {
@@ -64,24 +66,36 @@ public class NitnemService {
             Nitnem nitnem =
                     nitnems.get(i);
 
-            Integer nitnemTodayCount = nitnemEntryService.fetchTodayCount(nitnem.getName(), chatId);
-            Integer nitnemTillTodayCount = nitnemEntryService.fetchTillTodayCount(nitnem.getName(), chatId);
+//            Integer nitnemTodayCount = nitnemEntryService.fetchTodayCount(nitnem.getName(), chatId);
+//            Integer nitnemTillTodayCount = nitnemEntryService.fetchTillTodayCount(nitnem.getName(), chatId);
+            Integer nitnemTodayCount = nitnemEntryService.fetchTodayCount(nitnem);
+            Integer nitnemTillTodayCount = nitnemEntryService.fetchTillTodayCount(nitnem);
 
             StringBuilder nitnemTodayCountString = new StringBuilder();
             StringBuilder nitnemTillTodayCountString = new StringBuilder();
 
-            if (nitnem.getUnitConversionFactor() != 1) {
-                nitnemTodayCount /= nitnem.getUnitConversionFactor();
+            if (nitnem.getUnitConversionFactor() > 1) {
+                int newNitnemTodayCount = nitnemTodayCount/nitnem.getUnitConversionFactor();
                 int rem = nitnemTodayCount % nitnem.getUnitConversionFactor();
-                nitnemTodayCountString.append(nitnemTodayCount).append(".").append(rem).append("maala");
+                nitnemTodayCountString.append(newNitnemTodayCount);
+                if (rem != 0) {
+                    nitnemTodayCountString.append(":").append(rem);
+                }
+                nitnemTodayCountString.append(" maala");
+                log.info("Nitnem today count string formed: {}",nitnemTodayCountString);
 
-                nitnemTillTodayCount /= nitnem.getUnitConversionFactor();
+                int newNitnemTillTodayCount = nitnemTillTodayCount/nitnem.getUnitConversionFactor();
                 rem = nitnemTillTodayCount % nitnem.getUnitConversionFactor();
-                nitnemTillTodayCountString.append(nitnemTillTodayCount).append(".").append(rem).append("maala");
+                nitnemTillTodayCountString.append(newNitnemTillTodayCount);
+                if (rem != 0){
+                    nitnemTillTodayCountString.append(":").append(rem);
+                }
+                nitnemTillTodayCountString.append(" maala");
+                log.info("Nitnem Till today count string formed: {}",nitnemTillTodayCountString);
 
             } else {
-                nitnemTodayCountString.append(nitnemTodayCount).append("maala");
-                nitnemTillTodayCountString.append(nitnemTillTodayCount).append("maala");
+                nitnemTodayCountString.append(nitnemTodayCount);
+                nitnemTillTodayCountString.append(nitnemTillTodayCount);
             }
 
             sb.append(i + 1)
@@ -108,9 +122,13 @@ public class NitnemService {
 
     @Transactional
     public Integer deleteNitnem(Long chatId, String nitnemName) {
-        Nitnem nitnem = findByUserTelegramChatIdAndName(chatId, nitnemName);
+        Optional<Nitnem> nitnem = findByUserTelegramChatIdAndName(chatId, nitnemName);
 
-        if (nitnemEntryService.deleteNitnemEntries(nitnem) >= 0) {
+        if (nitnem.isEmpty()) {
+            return -1;
+        }
+
+        if (nitnemEntryService.deleteNitnemEntries(nitnem.get()) >= 0) {
             return nitnemRepository.deleteByUserTelegramChatIdAndName(chatId, nitnemName);
         } else  {
             return -1;
@@ -135,7 +153,6 @@ public class NitnemService {
         int unitConversionFactor = 1;
         if (session.getNitnemUnit().equals(NitnemUnit.MAALA)) {
             unitConversionFactor = 110;
-            targetCount = targetCount < 1500 ? targetCount : targetCount/unitConversionFactor + 1;
         }
 
         Nitnem nitnem = Nitnem.builder()
@@ -151,9 +168,8 @@ public class NitnemService {
         nitnemRepository.save(nitnem);
     }
 
-    public Nitnem findByUserTelegramChatIdAndName(Long chatId, String nitnemName) {
-        Optional<Nitnem> nitnem = nitnemRepository.findByUserTelegramChatIdAndName(chatId, nitnemName);
-        return nitnem.orElse(null);
+    public Optional<Nitnem> findByUserTelegramChatIdAndName(Long chatId, String nitnemName) {
+        return nitnemRepository.findByUserTelegramChatIdAndName(chatId, nitnemName);
     }
 
     public boolean nitnemExists(

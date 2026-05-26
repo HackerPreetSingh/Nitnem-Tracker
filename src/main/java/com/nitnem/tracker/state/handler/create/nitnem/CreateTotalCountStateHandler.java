@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -45,6 +47,16 @@ public class CreateTotalCountStateHandler
                 message
         );
 
+        if (message.equals(session.getLastProcessedMessage())
+                &&
+                LocalDateTime.now()
+                        .minusSeconds(10)
+                        .isBefore(session.getLastProcessedAt())
+        ) {
+
+            return;
+        }
+
         ValidationResult<Integer> result =
                 validationService.validatePositiveInteger(
                         message,
@@ -75,14 +87,17 @@ public class CreateTotalCountStateHandler
 
         senderService.send(
                 chatId,
-                "Enter the total duration of nitnem",
+                "Enter the total duration of nitnem in days : ",
                 keyboardFactory.getKeyboard(chatId, message)
         );
 
-        int convertedCount = session.getNitnemUnit() == NitnemUnit.MAALA?totalCount*110:totalCount;
+//        int convertedCount = session.getNitnemUnit() == NitnemUnit.MAALA?totalCount*110:totalCount;
 
         session.setState(UserState.WAITING_FOR_CREATE_DURATION_DAYS);
-        session.setTargetCount(convertedCount);
+        session.setTargetCount(totalCount);
+
+        session.setLastProcessedMessage(message);
+        session.setLastProcessedAt(LocalDateTime.now());
 
         sessionService.setSession(
                 chatId,

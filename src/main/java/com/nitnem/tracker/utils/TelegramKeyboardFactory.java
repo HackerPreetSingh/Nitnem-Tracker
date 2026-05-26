@@ -79,19 +79,19 @@ public class TelegramKeyboardFactory {
                 .oneTimeKeyboard(false)
                 .build();
     }
-//    public ReplyKeyboardMarkup getCountMenuKeyboard() {
-//
-//        KeyboardRow row1 = new KeyboardRow();
-//        row1.add("/Total today's count");
-//        KeyboardRow row2 = new KeyboardRow();
-//        row2.add("/total count");
-//
-//        return ReplyKeyboardMarkup.builder()
-//                .keyboard(List.of(row1, row2))
-//                .resizeKeyboard(true)
-//                .oneTimeKeyboard(false)
-//                .build();
-//    }
+    public ReplyKeyboardMarkup getNitnemUnitMenuKeyboard() {
+
+        KeyboardRow row1 = new KeyboardRow();
+        row1.add("Maala");
+        KeyboardRow row2 = new KeyboardRow();
+        row2.add("Raw/Total Count");
+
+        return ReplyKeyboardMarkup.builder()
+                .keyboard(List.of(row1, row2))
+                .resizeKeyboard(true)
+                .oneTimeKeyboard(false)
+                .build();
+    }
 
 
     public ReplyKeyboard getKeyboard(Long chatId, String message) {
@@ -101,7 +101,7 @@ public class TelegramKeyboardFactory {
             case "/start", "/exit", "/list" ->
                     getMainMenuKeyboard();
             case "/update", "/delete" -> getModifyMenuKeyboard(chatId);
-//            case "/list" -> getCountMenuKeyboard();
+            case "/unit" -> getNitnemUnitMenuKeyboard();
             default -> getExitMenuKeyboard();
         };
     }

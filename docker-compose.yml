@@ -1,41 +1,41 @@
-services:
-
-#  mysql:
-#    image: mysql:8
+#services:
 #
-#    container_name: nitnem-mysql
+##  mysql:
+##    image: mysql:8
+##
+##    container_name: nitnem-mysql
+##
+##    environment:
+##      MYSQL_ROOT_PASSWORD: root
+##      MYSQL_DATABASE: nitnemdb
+##
+##    ports:
+##      - "3306:3306"
+##
+##    volumes:
+##      - mysql_data:/var/lib/mysql
+#
+#  app:
+#    build: .
+#
+#    container_name: nitnem-tracker
+#
+##    depends_on:
+##      - mysql
 #
 #    environment:
-#      MYSQL_ROOT_PASSWORD: root
-#      MYSQL_DATABASE: nitnemdb
+#      SPRING_PROFILES_ACTIVE: dev
+#
+##      NITNEM_BOT_TOKEN: YOUR_TOKEN
+##
+##      DB_URL: jdbc:mysql://mysql:3306/nitnemdb
+##
+##      DB_USERNAME: root
+##
+##      DB_PASSWORD: root
 #
 #    ports:
-#      - "3306:3306"
+#      - "8080:8080"
 #
-#    volumes:
-#      - mysql_data:/var/lib/mysql
-
-  app:
-    build: .
-
-    container_name: nitnem-tracker
-
-#    depends_on:
-#      - mysql
-
-    environment:
-      SPRING_PROFILES_ACTIVE: dev
-
-#      NITNEM_BOT_TOKEN: YOUR_TOKEN
-#
-#      DB_URL: jdbc:mysql://mysql:3306/nitnemdb
-#
-#      DB_USERNAME: root
-#
-#      DB_PASSWORD: root
-
-    ports:
-      - "8080:8080"
-
-#volumes:
-#  mysql_data:
+##volumes:
+##  mysql_data:

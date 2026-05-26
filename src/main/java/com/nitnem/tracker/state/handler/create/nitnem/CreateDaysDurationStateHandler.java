@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Slf4j
 @Component
@@ -48,6 +49,16 @@ public class CreateDaysDurationStateHandler
                 message
         );
 
+        if (message.equals(session.getLastProcessedMessage())
+                &&
+                LocalDateTime.now()
+                        .minusSeconds(10)
+                        .isBefore(session.getLastProcessedAt())
+        ) {
+
+            return;
+        }
+
         ValidationResult<Integer> result =
                 validationService.validatePositiveInteger(
                         message,
@@ -76,6 +87,10 @@ public class CreateDaysDurationStateHandler
         );
 
         session.setDurationDays(durationDays);
+
+        session.setLastProcessedMessage(message);
+        session.setLastProcessedAt(LocalDateTime.now());
+
         nitnemService.saveNitnem(session, chatId);
 
         senderService.send(

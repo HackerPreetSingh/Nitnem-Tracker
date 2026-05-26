@@ -30,17 +30,25 @@ public class NitnemEntryService {
         nitnemEntryRepository.save(nitnemEntry);
     }
 
-    public Integer fetchTodayCount(String nitnemName, Long chatId) {
-        Optional<Nitnem> nitnemOpt = nitnemRepository.findByUserTelegramChatIdAndName(chatId, nitnemName);
+//    public Integer fetchTodayCount(String nitnemName, Long chatId) {
+//        Optional<Nitnem> nitnemOpt = nitnemRepository.findByUserTelegramChatIdAndName(chatId, nitnemName);
+//
+//        return nitnemOpt.isPresent()
+//                ? nitnemEntryRepository.getTodayCompletedCount(nitnemOpt.get().getId(), LocalDate.now())
+//                :-1;
+//    }
 
-        return nitnemOpt.isPresent()
-                ? nitnemEntryRepository.getTodayCompletedCount(nitnemOpt.get().getId(), LocalDate.now())
-                :-1;
+    public Integer fetchTodayCount(Nitnem nitnem) {
+        return nitnemEntryRepository.getTodayCompletedCount(nitnem.getId(), LocalDate.now());
     }
 
-    public Integer fetchTillTodayCount(String nitnemName, Long chatId) {
-        Optional<Nitnem> nitnemOpt = nitnemRepository.findByUserTelegramChatIdAndName(chatId, nitnemName);
-        return nitnemOpt.isPresent()?nitnemEntryRepository.getTillTodayCompletedCount(nitnemOpt.get().getId()):-1;
+//    public Integer fetchTillTodayCount(String nitnemName, Long chatId) {
+//        Optional<Nitnem> nitnemOpt = nitnemRepository.findByUserTelegramChatIdAndName(chatId, nitnemName);
+//        return nitnemOpt.isPresent()?nitnemEntryRepository.getTillTodayCompletedCount(nitnemOpt.get().getId()):-1;
+//    }
+
+    public Integer fetchTillTodayCount(Nitnem nitnem) {
+        return nitnemEntryRepository.getTillTodayCompletedCount(nitnem.getId());
     }
 
     public Integer deleteNitnemEntries(Nitnem nitnem) {

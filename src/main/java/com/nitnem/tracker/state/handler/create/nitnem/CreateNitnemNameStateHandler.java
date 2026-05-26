@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -43,6 +45,16 @@ public class CreateNitnemNameStateHandler
                 message
         );
 
+        if (message.equals(session.getLastProcessedMessage())
+                &&
+                LocalDateTime.now()
+                        .minusSeconds(10)
+                        .isBefore(session.getLastProcessedAt())
+        ) {
+
+            return;
+        }
+
         ValidationResult<String> result =
                 validationService.validateNitnemName(message);
 
@@ -68,11 +80,14 @@ public class CreateNitnemNameStateHandler
         senderService.send(
                 chatId,
                 "Enter the nitnem type: Maala/Raw",
-                keyboardFactory.getKeyboard(chatId, nitnemName)
+                keyboardFactory.getKeyboard(chatId, "/unit")
         );
 
         session.setState(UserState.WAITING_FOR_CREATE_NITNEM_UNIT);
         session.setNitnemName(nitnemName);
+
+        session.setLastProcessedMessage(nitnemName);
+        session.setLastProcessedAt(LocalDateTime.now());
 
         sessionService.setSession(
                 chatId,

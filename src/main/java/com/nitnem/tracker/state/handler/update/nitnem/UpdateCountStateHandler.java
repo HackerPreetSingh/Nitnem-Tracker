@@ -1,6 +1,7 @@
 package com.nitnem.tracker.state.handler.update.nitnem;
 
 import com.nitnem.tracker.entity.Nitnem;
+import com.nitnem.tracker.model.NitnemUnit;
 import com.nitnem.tracker.model.UserSession;
 import com.nitnem.tracker.model.UserState;
 import com.nitnem.tracker.model.ValidationResult;
@@ -10,6 +11,9 @@ import com.nitnem.tracker.utils.TelegramKeyboardFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Slf4j
 @Component
@@ -24,8 +28,6 @@ public class UpdateCountStateHandler
     private final TelegramKeyboardFactory keyboardFactory;
 
     private final NitnemEntryService nitnemEntryService;
-
-    private final NitnemService nitnemService;
 
     private final ValidationService validationService;
 
@@ -42,12 +44,22 @@ public class UpdateCountStateHandler
             String message
     ) throws Exception {
 
+        if (message.equals(session.getLastProcessedMessage())
+                &&
+                LocalDateTime.now()
+                        .minusSeconds(10)
+                        .isBefore(session.getLastProcessedAt())
+        ) {
+
+            return;
+        }
+
         ValidationResult<Integer> result =
                 validationService.validatePositiveInteger(
                         message,
                         "Today Count",
                         1,
-                        3650
+                        200000
                 );
 
         if (!result.isValid()) {
@@ -61,13 +73,21 @@ public class UpdateCountStateHandler
             return;
         }
 
-        int currentCount = result.getValue();
+        Nitnem nitnem = session.getNitnem();
 
-        Nitnem nitnem = nitnemService
-                .findByUserTelegramChatIdAndName(
-                        chatId,
-                        session.getNitnemName()
-                );
+        int currentCount = result.getValue();
+        if (session.getNitnemUnit() == NitnemUnit.MAALA) {
+            currentCount *= nitnem.getUnitConversionFactor();
+            log.info("Nitnem Unit MAALA: Current Count: {}", currentCount);
+        }
+
+//        Optional<Nitnem> nitnemOpt = nitnemService
+//                .findByUserTelegramChatIdAndName(
+//                        chatId,
+//                        session.getNitnemName()
+//                );
+
+//        Nitnem nitnem = nitnemOpt.get();
 
         int thresholdCount = nitnem.getTargetCount();
 
@@ -81,16 +101,15 @@ public class UpdateCountStateHandler
 
             senderService.send(
                     chatId,
-                    result.getErrorMessage(),
+                    result2.getErrorMessage(),
                     keyboardFactory.getKeyboard(chatId, message)
             );
 
             return;
         }
 
-        currentCount = result.getValue();
-
-
+        currentCount = result2.getValue();
+        log.info("Nitnem Unit MAALA: Current Count before saving: {}", currentCount);
 
         nitnemEntryService.saveNitnemEntry(nitnem, currentCount);
 
@@ -99,12 +118,22 @@ public class UpdateCountStateHandler
                 currentCount
         );
 
+//        senderService.send(
+//                chatId,
+//                "Count Update Successfully. Total today count : "
+//                        + nitnemEntryService.fetchTodayCount(session.getNitnemName(), chatId),
+//                keyboardFactory.getMainMenuKeyboard()
+//        );
         senderService.send(
                 chatId,
                 "Count Update Successfully. Total today count : "
-                        + nitnemEntryService.fetchTodayCount(session.getNitnemName(), chatId),
+                        + nitnemEntryService.fetchTodayCount(nitnem),
                 keyboardFactory.getMainMenuKeyboard()
         );
+
+
+        session.setLastProcessedMessage(message);
+        session.setLastProcessedAt(LocalDateTime.now());
 
         sessionService.clear(
                 chatId

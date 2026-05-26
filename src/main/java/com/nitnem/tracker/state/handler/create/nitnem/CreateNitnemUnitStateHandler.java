@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -41,6 +43,16 @@ public class CreateNitnemUnitStateHandler
                 message
         );
 
+        if (message.equals(session.getLastProcessedMessage())
+                &&
+                LocalDateTime.now()
+                        .minusSeconds(10)
+                        .isBefore(session.getLastProcessedAt())
+        ) {
+
+            return;
+        }
+
         String nitnemUnit = message.toLowerCase();
 
         if (nitnemUnit.equals("maala") ) {
@@ -63,6 +75,8 @@ public class CreateNitnemUnitStateHandler
         );
 
         session.setState(UserState.WAITING_FOR_CREATE_TOTAL_COUNT);
+        session.setLastProcessedMessage(message);
+        session.setLastProcessedAt(LocalDateTime.now());
 
         sessionService.setSession(
                 chatId,

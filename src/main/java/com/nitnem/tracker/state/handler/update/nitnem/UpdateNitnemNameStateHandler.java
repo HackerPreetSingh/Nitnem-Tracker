@@ -1,6 +1,8 @@
 package com.nitnem.tracker.state.handler.update.nitnem;
 
+import com.nitnem.tracker.entity.Nitnem;
 import com.nitnem.tracker.entity.User;
+import com.nitnem.tracker.model.NitnemUnit;
 import com.nitnem.tracker.model.UserSession;
 import com.nitnem.tracker.model.UserState;
 import com.nitnem.tracker.model.ValidationResult;
@@ -13,6 +15,9 @@ import com.nitnem.tracker.utils.TelegramKeyboardFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Slf4j
 @Component
@@ -43,6 +48,16 @@ public class UpdateNitnemNameStateHandler
             String message
     ) throws Exception {
 
+        if (message.equals(session.getLastProcessedMessage())
+                &&
+                LocalDateTime.now()
+                        .minusSeconds(10)
+                        .isBefore(session.getLastProcessedAt())
+        ) {
+
+            return;
+        }
+
         ValidationResult<String> result =
                 validationService.validateNitnemName(message);
 
@@ -58,10 +73,9 @@ public class UpdateNitnemNameStateHandler
 
         String nitnemName = result.getValue();
 
-        if (!nitnemService.nitnemExists(
-                chatId,
-                nitnemName
-        )) {
+        Optional<Nitnem> nitnemOpt = nitnemService.findByUserTelegramChatIdAndName(chatId, nitnemName);
+
+        if (nitnemOpt.isEmpty()) {
 
             senderService.send(
                     chatId,
@@ -75,14 +89,34 @@ public class UpdateNitnemNameStateHandler
             return;
         }
 
-        senderService.send(
-                chatId,
-                "Enter Nitnem Unit: Maala/Raw",
-                keyboardFactory.getExitMenuKeyboard()
-        );
+        Nitnem nitnem = nitnemOpt.get();
 
-        session.setNitnemName(nitnemName);
-        session.setState(UserState.WAITING_FOR_UPDATE_NITNEM_COUNT);
+        session.setNitnem(nitnem);
+
+//        session.setNitnemId(nitnem.getId());
+//        session.setNitnemName(nitnemName);
+
+        if (nitnem.getUnitConversionFactor() > 1) {
+            senderService.send(
+                    chatId,
+                    "Enter Nitnem Unit: Maala/Raw",
+                    keyboardFactory.getKeyboard(chatId, "/unit")
+            );
+
+            session.setState(UserState.WAITING_FOR_UPDATE_NITNEM_UNIT);
+        } else {
+            senderService.send(
+                    chatId,
+                    "Enter Nitnem Count:",
+                    keyboardFactory.getExitMenuKeyboard()
+            );
+
+            session.setNitnemUnit(NitnemUnit.RAW);
+            session.setState(UserState.WAITING_FOR_UPDATE_NITNEM_COUNT);
+        }
+
+        session.setLastProcessedMessage(message);
+        session.setLastProcessedAt(LocalDateTime.now());
 
         sessionService.setSession(
                 chatId,
